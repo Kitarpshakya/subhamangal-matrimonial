@@ -1,14 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { logoutUser } from '../firebase/firebaseService';
+import { logoutUser, getUserInterests } from '../firebase/firebaseService';
 import { Button } from './ui/button';
-import { LogOut, User, Shield } from 'lucide-react';
+import { LogOut, User, Shield, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Header = () => {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [pendingInterestsCount, setPendingInterestsCount] = useState(0);
+
+  useEffect(() => {
+    if (user && !isAdmin) {
+      loadPendingInterests();
+      // Poll for new interests every 30 seconds
+      const interval = setInterval(loadPendingInterests, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user, isAdmin]);
+
+  const loadPendingInterests = async () => {
+    try {
+      const interests = await getUserInterests(user.uid);
+      const pending = interests.received.filter(
+        (interest) => interest.status === "interested"
+      );
+      setPendingInterestsCount(pending.length);
+    } catch (error) {
+      console.error("Error loading interests count:", error);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -44,15 +66,31 @@ const Header = () => {
                     Admin Dashboard
                   </Button>
                 ) : (
-                  <Button
-                    data-testid="profile-link"
-                    onClick={() => navigate('/profile')}
-                    variant="ghost"
-                    className="flex items-center gap-2"
-                  >
-                    <User className="w-4 h-4" />
-                    Profile
-                  </Button>
+                  <>
+                    <Button
+                      data-testid="profile-link"
+                      onClick={() => navigate('/profile')}
+                      variant="ghost"
+                      className="flex items-center gap-2"
+                    >
+                      <User className="w-4 h-4" />
+                      Profile
+                    </Button>
+                    <Button
+                      data-testid="interests-link"
+                      onClick={() => navigate('/interests')}
+                      variant="ghost"
+                      className="flex items-center gap-2 relative"
+                    >
+                      <Heart className="w-4 h-4" />
+                      Interests
+                      {pendingInterestsCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                          {pendingInterestsCount}
+                        </span>
+                      )}
+                    </Button>
+                  </>
                 )}
                 <Button
                   data-testid="logout-button"

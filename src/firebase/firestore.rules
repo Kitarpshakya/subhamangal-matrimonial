@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Profiles collection - matrimonial user profiles
+    match /profiles/{userId} {
+      // Anyone can read profiles (for matching purposes)
+      allow read: if true;
+
+      // Only authenticated users can create their own profile
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // Users can update their own profile, admins can update any profile
+      allow update: if request.auth != null &&
+                      (request.auth.uid == userId ||
+                       exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+
+      // Only admins can delete profiles
+      allow delete: if request.auth != null &&
+                      exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Admins collection - stores admin user IDs
+    match /admins/{userId} {
+      // Authenticated users can read to check admin status
+      allow read: if request.auth != null;
+
+      // No one can write through code (manually add via Firebase Console)
+      allow write: if false;
+    }
+
+    // Interests collection - tracks profile interests between users
+    match /interests/{interestId} {
+      // Users can read interests where they are involved (sender or receiver)
+      allow read: if request.auth != null &&
+                    (resource.data.interestedBy == request.auth.uid ||
+                     resource.data.interestedIn == request.auth.uid);
+
+      // Users can create interests where they are the sender
+      // Validates document ID format: {senderId}_{receiverId}
+      allow create: if request.auth != null &&
+                      request.resource.data.interestedBy == request.auth.uid &&
+                      interestId == request.auth.uid + '_' + request.resource.data.interestedIn;
+
+      // Users can update interests where they are involved
+      // Sender can update their sent interest, receiver can accept/reject
+      allow update: if request.auth != null &&
+                      (resource.data.interestedBy == request.auth.uid ||
+                       resource.data.interestedIn == request.auth.uid);
+
+      // Users can delete their own sent interests
+      allow delete: if request.auth != null &&
+                      resource.data.interestedBy == request.auth.uid;
+
+      // Admins have full access to all interests
+      allow read, write: if request.auth != null &&
+                           exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+  }
+}

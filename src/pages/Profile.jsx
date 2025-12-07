@@ -1,37 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import {
-  getUserProfile,
-  updateUserProfile,
-  addAdminNote,
-  isAdmin as checkAdmin,
-} from "../firebase/firebaseService";
+import { getUserProfile, updateUserProfile, addAdminNote, isAdmin as checkAdmin } from "../firebase/firebaseService";
 import { useSearchParams } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
-import {
-  User,
-  Mail,
-  MapPin,
-  Heart,
-  Calendar,
-  AlertCircle,
-  Edit2,
-  Save,
-  X,
-  Phone,
-  FileText,
-} from "lucide-react";
+import Register from "../components/Register";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { User, Mail, MapPin, Heart, Calendar, AlertCircle, Edit2, Save, X, Phone, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 const HOBBIES_OPTIONS = [
@@ -64,6 +42,7 @@ const Profile = () => {
   const [selectedHobbies, setSelectedHobbies] = useState([]);
   const [adminNote, setAdminNote] = useState("");
   const [addingNote, setAddingNote] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -111,9 +90,7 @@ const Profile = () => {
   };
 
   const toggleHobby = (hobby) => {
-    setSelectedHobbies((prev) =>
-      prev.includes(hobby) ? prev.filter((h) => h !== hobby) : [...prev, hobby]
-    );
+    setSelectedHobbies((prev) => (prev.includes(hobby) ? prev.filter((h) => h !== hobby) : [...prev, hobby]));
   };
 
   const handleSave = async () => {
@@ -262,10 +239,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-pink-50 py-12 px-6">
-      <div
-        className="container mx-auto max-w-4xl"
-        data-testid="profile-container"
-      >
+      <div className="container mx-auto max-w-4xl" data-testid="profile-container">
         <Card className="p-8 shadow-2xl border-0 bg-white/80 backdrop-blur">
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -287,22 +261,15 @@ const Profile = () => {
             </div>
 
             <div className="flex gap-2">
-              {!isAdminUser &&
-                !viewingUserId &&
-                profile.status === "pending" && (
-                  <Button
-                    onClick={() =>
-                      window.open(
-                        "https://forms.google.com/your-form-id",
-                        "_blank"
-                      )
-                    }
-                    className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600"
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Complete Registration
-                  </Button>
-                )}
+              {!isAdminUser && !viewingUserId && profile.status === "pending" && (
+                <Button
+                  onClick={() => setShowRegister(true)}
+                  className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Complete Registration
+                </Button>
+              )}
 
               {isAdminUser && !isEditing && (
                 <Button
@@ -323,11 +290,7 @@ const Profile = () => {
                     <Save className="w-4 h-4 mr-2" />
                     Save
                   </Button>
-                  <Button
-                    onClick={handleCancel}
-                    variant="outline"
-                    className="border-gray-300"
-                  >
+                  <Button onClick={handleCancel} variant="outline" className="border-gray-300">
                     <X className="w-4 h-4 mr-2" />
                     Cancel
                   </Button>
@@ -339,10 +302,7 @@ const Profile = () => {
           <div className="flex flex-col md:flex-row gap-8">
             <div className="flex-shrink-0">
               <img
-                src={
-                  profile.photoURL ||
-                  "https://api.dicebear.com/7.x/avataaars/svg?seed=default"
-                }
+                src={profile.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=default"}
                 alt={profile.fullName}
                 className="w-48 h-48 rounded-2xl object-cover border-4 border-rose-100 shadow-lg"
                 data-testid="profile-photo"
@@ -353,12 +313,7 @@ const Profile = () => {
               {!isEditing ? (
                 <>
                   <div className="grid md:grid-cols-2 gap-4">
-                    <InfoField
-                      icon={<Mail />}
-                      label="Email"
-                      value={profile.email}
-                      testId="profile-email"
-                    />
+                    <InfoField icon={<Mail />} label="Email" value={profile.email} testId="profile-email" />
                     <InfoField
                       icon={<Phone />}
                       label="Mobile"
@@ -381,9 +336,7 @@ const Profile = () => {
                       icon={<MapPin />}
                       label="Location"
                       value={`${profile.location || "Not specified"}${
-                        profile.detailLocation
-                          ? `, ${profile.detailLocation}`
-                          : ""
+                        profile.detailLocation ? `, ${profile.detailLocation}` : ""
                       }`}
                       testId="profile-location"
                     />
@@ -414,26 +367,20 @@ const Profile = () => {
                         Hobbies
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {(Array.isArray(profile.hobbies)
-                          ? profile.hobbies
-                          : profile.hobbies.split(",")
-                        ).map((hobby, idx) => (
-                          <span
-                            key={idx}
-                            className="px-3 py-1 bg-rose-50 text-rose-700 rounded-full text-sm"
-                          >
-                            {hobby.trim()}
-                          </span>
-                        ))}
+                        {(Array.isArray(profile.hobbies) ? profile.hobbies : profile.hobbies.split(",")).map(
+                          (hobby, idx) => (
+                            <span key={idx} className="px-3 py-1 bg-rose-50 text-rose-700 rounded-full text-sm">
+                              {hobby.trim()}
+                            </span>
+                          )
+                        )}
                       </div>
                     </div>
                   )}
 
                   {profile.mustHave && (
                     <div data-testid="profile-musthave">
-                      <p className="text-xs text-gray-500 uppercase font-semibold mb-2">
-                        Must-have in Partner
-                      </p>
+                      <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Must-have in Partner</p>
                       <p className="text-gray-800">{profile.mustHave}</p>
                     </div>
                   )}
@@ -446,27 +393,21 @@ const Profile = () => {
                       <Label>First Name</Label>
                       <Input
                         value={editedProfile.firstName || ""}
-                        onChange={(e) =>
-                          handleEditChange("firstName", e.target.value)
-                        }
+                        onChange={(e) => handleEditChange("firstName", e.target.value)}
                       />
                     </div>
                     <div>
                       <Label>Middle Name</Label>
                       <Input
                         value={editedProfile.middleName || ""}
-                        onChange={(e) =>
-                          handleEditChange("middleName", e.target.value)
-                        }
+                        onChange={(e) => handleEditChange("middleName", e.target.value)}
                       />
                     </div>
                     <div>
                       <Label>Last Name</Label>
                       <Input
                         value={editedProfile.lastName || ""}
-                        onChange={(e) =>
-                          handleEditChange("lastName", e.target.value)
-                        }
+                        onChange={(e) => handleEditChange("lastName", e.target.value)}
                       />
                     </div>
                   </div>
@@ -477,18 +418,14 @@ const Profile = () => {
                       <Input
                         type="number"
                         value={editedProfile.age || ""}
-                        onChange={(e) =>
-                          handleEditChange("age", e.target.value)
-                        }
+                        onChange={(e) => handleEditChange("age", e.target.value)}
                       />
                     </div>
                     <div>
                       <Label>Gender</Label>
                       <Select
                         value={editedProfile.gender || "Male"}
-                        onValueChange={(value) =>
-                          handleEditChange("gender", value)
-                        }
+                        onValueChange={(value) => handleEditChange("gender", value)}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -507,9 +444,7 @@ const Profile = () => {
                       <Label>Location</Label>
                       <Select
                         value={editedProfile.location || ""}
-                        onValueChange={(value) =>
-                          handleEditChange("location", value)
-                        }
+                        onValueChange={(value) => handleEditChange("location", value)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select location" />
@@ -525,9 +460,7 @@ const Profile = () => {
                       <Label>Detail Location</Label>
                       <Input
                         value={editedProfile.detailLocation || ""}
-                        onChange={(e) =>
-                          handleEditChange("detailLocation", e.target.value)
-                        }
+                        onChange={(e) => handleEditChange("detailLocation", e.target.value)}
                         placeholder="Area / Street"
                       />
                     </div>
@@ -537,9 +470,7 @@ const Profile = () => {
                     <Label>Mobile Number</Label>
                     <Input
                       value={editedProfile.mobile || ""}
-                      onChange={(e) =>
-                        handleEditChange("mobile", e.target.value)
-                      }
+                      onChange={(e) => handleEditChange("mobile", e.target.value)}
                       placeholder="98XXXXXXXX"
                       maxLength="10"
                     />
@@ -549,9 +480,7 @@ const Profile = () => {
                     <Label>Bihar/Bahi Name</Label>
                     <Input
                       value={editedProfile.biharBahi || ""}
-                      onChange={(e) =>
-                        handleEditChange("biharBahi", e.target.value)
-                      }
+                      onChange={(e) => handleEditChange("biharBahi", e.target.value)}
                       placeholder="Enter Bihar/Bahi name"
                     />
                   </div>
@@ -561,9 +490,7 @@ const Profile = () => {
                       <Label>Caste</Label>
                       <Input
                         value={editedProfile.caste || ""}
-                        onChange={(e) =>
-                          handleEditChange("caste", e.target.value)
-                        }
+                        onChange={(e) => handleEditChange("caste", e.target.value)}
                         placeholder="Enter caste"
                       />
                     </div>
@@ -571,9 +498,7 @@ const Profile = () => {
                       <Label>Intercaste in Family Tree</Label>
                       <Select
                         value={editedProfile.intercaste || "No"}
-                        onValueChange={(value) =>
-                          handleEditChange("intercaste", value)
-                        }
+                        onValueChange={(value) => handleEditChange("intercaste", value)}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -610,9 +535,7 @@ const Profile = () => {
                     <Label>Must-have in Partner</Label>
                     <Textarea
                       value={editedProfile.mustHave || ""}
-                      onChange={(e) =>
-                        handleEditChange("mustHave", e.target.value)
-                      }
+                      onChange={(e) => handleEditChange("mustHave", e.target.value)}
                       className="min-h-[100px]"
                     />
                   </div>
@@ -622,8 +545,8 @@ const Profile = () => {
               {profile.status === "pending" && !isEditing && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <p className="text-yellow-800 text-sm">
-                    <strong>Note:</strong> Your profile is pending admin
-                    approval. You will be notified once it's reviewed.
+                    <strong>Note:</strong> Your profile is pending admin approval. You will be notified once it's
+                    reviewed.
                   </p>
                 </div>
               )}
@@ -631,8 +554,7 @@ const Profile = () => {
               {profile.status === "approved" && !isEditing && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-green-800 text-sm">
-                    <strong>Congratulations!</strong> Your profile has been
-                    approved and is now visible to other users.
+                    <strong>Congratulations!</strong> Your profile has been approved and is now visible to other users.
                   </p>
                 </div>
               )}
@@ -646,10 +568,7 @@ const Profile = () => {
                   {profile.adminNotes && profile.adminNotes.length > 0 && (
                     <div className="space-y-3 mb-4">
                       {profile.adminNotes.map((note, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-blue-50 border border-blue-200 rounded-lg p-3"
-                        >
+                        <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                           <Textarea
                             defaultValue={note.note}
                             onBlur={(e) => {
@@ -662,8 +581,7 @@ const Profile = () => {
                             placeholder="Click to edit note..."
                           />
                           <p className="text-xs text-blue-600">
-                            Last updated:{" "}
-                            {new Date(note.timestamp).toLocaleString()}
+                            Last updated: {new Date(note.timestamp).toLocaleString()}
                           </p>
                         </div>
                       ))}
@@ -693,6 +611,7 @@ const Profile = () => {
           </div>
         </Card>
       </div>
+      {showRegister && <Register onClose={() => setShowRegister(false)}></Register>}
     </div>
   );
 };

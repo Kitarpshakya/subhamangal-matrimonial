@@ -67,10 +67,7 @@ const ChatBot = ({ onClose }) => {
     // Only initialize once using ref instead of state
     if (!initializedRef.current) {
       initializedRef.current = true;
-      addMessage(
-        "bot",
-        "👋 Hi! I will ask a few questions to find good matches for you."
-      );
+      addMessage("bot", "👋 Hi! I will ask a few questions to find good matches for you.");
       setTimeout(() => {
         if (questions[0]) {
           addMessage("bot", questions[0].question);
@@ -120,9 +117,7 @@ const ChatBot = ({ onClose }) => {
   };
 
   const toggleHobby = (hobby) => {
-    setSelectedHobbies((prev) =>
-      prev.includes(hobby) ? prev.filter((h) => h !== hobby) : [...prev, hobby]
-    );
+    setSelectedHobbies((prev) => (prev.includes(hobby) ? prev.filter((h) => h !== hobby) : [...prev, hobby]));
   };
 
   const moveToNextStep = (answer) => {
@@ -169,9 +164,7 @@ const ChatBot = ({ onClose }) => {
             return false;
           }
           if (p.gender.toLowerCase() !== prefs.gender.toLowerCase()) {
-            console.log(
-              `Gender mismatch: Looking for ${prefs.gender}, found ${p.gender}`
-            );
+            console.log(`Gender mismatch: Looking for ${prefs.gender}, found ${p.gender}`);
             return false;
           }
         }
@@ -187,9 +180,7 @@ const ChatBot = ({ onClose }) => {
           }
 
           if (profileAge < ageRange.min || profileAge > ageRange.max) {
-            console.log(
-              `Age mismatch: Looking for ${prefs.preferredAge}, found ${profileAge}`
-            );
+            console.log(`Age mismatch: Looking for ${prefs.preferredAge}, found ${profileAge}`);
             return false;
           }
         }
@@ -201,34 +192,28 @@ const ChatBot = ({ onClose }) => {
             return false;
           }
           if (!p.location.toLowerCase().includes(prefs.city.toLowerCase())) {
-            console.log(
-              `Location mismatch: Looking for ${prefs.city}, found ${p.location}`
-            );
+            console.log(`Location mismatch: Looking for ${prefs.city}, found ${p.location}`);
             return false;
           }
         }
 
         // Hobbies filter - OPTIONAL: Nice to have but not required
-        // if (prefs.hobbies && prefs.hobbies.length > 0) {
-        //   const profileHobbies = p.hobbies
-        //     ? Array.isArray(p.hobbies)
-        //       ? p.hobbies
-        //       : p.hobbies.split(",").map((h) => h.trim())
-        //     : [];
+        if (prefs.hobbies && prefs.hobbies.length > 0) {
+          const profileHobbies = p.hobbies
+            ? Array.isArray(p.hobbies)
+              ? p.hobbies
+              : p.hobbies.split(",").map((h) => h.trim())
+            : [];
 
-        //   const hasOverlap = prefs.hobbies.some((h) =>
-        //     profileHobbies.some((ph) =>
-        //       ph.toLowerCase().includes(h.toLowerCase())
-        //     )
-        //   );
+          const hasOverlap = prefs.hobbies.some((h) =>
+            profileHobbies.some((ph) => ph.toLowerCase().includes(h.toLowerCase()))
+          );
 
-        //   if (!hasOverlap) {
-        //     console.log(
-        //       `No hobby overlap: Looking for ${prefs.hobbies}, found ${profileHobbies}`
-        //     );
-        //     return false;
-        //   }
-        // }
+          if (!hasOverlap) {
+            console.log(`No hobby overlap: Looking for ${prefs.hobbies}, found ${profileHobbies}`);
+            return false;
+          }
+        }
 
         console.log("✓ Profile matched!");
         return true;
@@ -249,10 +234,7 @@ const ChatBot = ({ onClose }) => {
       }, 1000);
     } catch (error) {
       console.error("Error finding matches:", error);
-      addMessage(
-        "bot",
-        "Unable to find matches right now. Please try again later."
-      );
+      addMessage("bot", "Unable to find matches right now. Please try again later.");
       setSearching(false);
     }
   };
@@ -271,16 +253,10 @@ const ChatBot = ({ onClose }) => {
   const currentQuestion = questions[step];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      data-testid="chatbot-container"
-    >
-      <div className="fixed inset-0 bg-black/50"/>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" data-testid="chatbot-container">
+      <div className="fixed inset-0 bg-black/50" />
 
-      <Card
-        className="relative w-full max-w-2xl flex flex-col shadow-2xl"
-        style={{ height: "90vh" }}
-      >
+      <Card className="relative w-full max-w-2xl flex flex-col shadow-2xl" style={{ height: "90vh" }}>
         <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-t-lg flex-shrink-0">
           <div className="flex items-center gap-2">
             <Bot className="w-6 h-6" />
@@ -303,9 +279,7 @@ const ChatBot = ({ onClose }) => {
           {messages.map((msg, idx) => (
             <div
               key={idx}
-              className={`flex ${
-                msg.sender === "user" ? "justify-end" : "justify-start"
-              }`}
+              className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
               data-testid={`message-${msg.sender}`}
             >
               <div
@@ -340,9 +314,7 @@ const ChatBot = ({ onClose }) => {
                 {currentQuestion.options.map((option) => (
                   <Button
                     key={option}
-                    data-testid={`option-${option
-                      .toLowerCase()
-                      .replace(/\s+/g, "-")}`}
+                    data-testid={`option-${option.toLowerCase().replace(/\s+/g, "-")}`}
                     onClick={() => handleOptionClick(option)}
                     variant="outline"
                     className="hover:bg-rose-50 hover:border-rose-300 transition-all"
@@ -361,9 +333,7 @@ const ChatBot = ({ onClose }) => {
                       key={option}
                       data-testid={`hobby-${option.toLowerCase()}`}
                       onClick={() => toggleHobby(option)}
-                      variant={
-                        selectedHobbies.includes(option) ? "default" : "outline"
-                      }
+                      variant={selectedHobbies.includes(option) ? "default" : "outline"}
                       className={
                         selectedHobbies.includes(option)
                           ? "bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"

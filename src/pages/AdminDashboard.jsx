@@ -167,20 +167,29 @@ const AdminDashboard = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <Shield className="w-10 h-10 text-rose-600" />
-            <h2 
+            <h2
               className="text-4xl font-bold"
               style={{ fontFamily: '"Playfair Display", serif' }}
             >
               Admin Dashboard
             </h2>
           </div>
-          <Button
-            onClick={downloadCSV}
-            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Download CSV
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => navigate('/admin/paired-profiles')}
+              className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"
+            >
+              <Heart className="w-4 h-4 mr-2" />
+              Paired Profiles
+            </Button>
+            <Button
+              onClick={downloadCSV}
+              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download CSV
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}

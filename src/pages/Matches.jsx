@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../context/AuthContext";
-import { Heart, MapPin, Calendar, Sparkles, MessageCircle } from "lucide-react";
+import { Heart, MapPin, Calendar, Sparkles, MessageCircle, Check } from "lucide-react";
 import ChatBot from "../components/ChatBot";
+import { expressInterest, checkInterest } from "../firebase/firebaseService";
+import { useToast } from "../hooks/use-toast";
 
 // Dummy profile images for privacy
 const DUMMY_AVATARS = [
@@ -20,7 +22,10 @@ const Matches = () => {
   const [matches, setMatches] = useState([]);
   const [preferences, setPreferences] = useState(null);
   const [showChatBot, setShowChatBot] = useState(false);
-  const { user } = useAuth();
+  const [interestedProfiles, setInterestedProfiles] = useState(new Set());
+  const [loadingInterests, setLoadingInterests] = useState({});
+  const { user, isAdmin } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,12 +48,33 @@ const Matches = () => {
         matchId: `match_${idx}_${Date.now()}`, // Unique ID that doesn't reveal identity
       }));
       setMatches(processedMatches);
+
+      // Check which profiles the user has already expressed interest in
+      checkExistingInterests(parsedMatches);
     }
 
     if (storedPrefs) {
       setPreferences(JSON.parse(storedPrefs));
     }
   }, [user, navigate]);
+
+  const checkExistingInterests = async (matchList) => {
+    if (!user) return;
+
+    const interested = new Set();
+
+    // Check each match to see if interest was already expressed
+    for (const match of matchList) {
+      if (match.uid && match.uid !== user.uid) {
+        const result = await checkInterest(user.uid, match.uid);
+        if (result.exists) {
+          interested.add(match.uid);
+        }
+      }
+    }
+
+    setInterestedProfiles(interested);
+  };
 
   const getDisplayName = (profile) => {
     const fullName = profile.fullName || profile.name || "";
@@ -62,9 +88,74 @@ const Matches = () => {
     return "*** " + nameParts.slice(1).join(" ");
   };
 
-  const handleContactInterest = (match) => {
-    // TODO: Implement contact/interest feature
-    console.log("Interested in:", match.matchId);
+  const handleContactInterest = async (match) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to express interest",
+        variant: "destructive",
+      });
+      navigate("/signin?redirect=/matches");
+      return;
+    }
+
+    // Admins cannot express interest
+    if (isAdmin) {
+      toast({
+        title: "Admin Restriction",
+        description: "Admins cannot express interest in profiles",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if this is the user's own profile
+    if (match.uid === user.uid) {
+      toast({
+        title: "Invalid Action",
+        description: "You cannot express interest in your own profile",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if already interested
+    if (interestedProfiles.has(match.uid)) {
+      toast({
+        title: "Already Sent",
+        description: "You have already expressed interest in this profile",
+      });
+      return;
+    }
+
+    // Prevent double-click while loading
+    if (loadingInterests[match.uid]) {
+      return;
+    }
+
+    // Set loading state for this specific match
+    setLoadingInterests(prev => ({ ...prev, [match.uid]: true }));
+
+    try {
+      await expressInterest(user.uid, match.uid);
+
+      // Update the interested profiles set
+      setInterestedProfiles(prev => new Set([...prev, match.uid]));
+
+      toast({
+        title: "Interest Sent!",
+        description: "The admin will be notified of your interest",
+      });
+    } catch (error) {
+      console.error("Error expressing interest:", error);
+      toast({
+        title: "Error",
+        description: "Failed to express interest. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingInterests(prev => ({ ...prev, [match.uid]: false }));
+    }
   };
 
   return (
@@ -163,13 +254,41 @@ const Matches = () => {
                       </div>
                     )}
 
-                    <Button
-                      onClick={() => handleContactInterest(match)}
-                      className="w-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"
-                    >
-                      <Heart className="w-4 h-4 mr-2" />
-                      Express Interest
-                    </Button>
+                    {isAdmin ? (
+                      <Button
+                        disabled
+                        className="w-full bg-gray-300 cursor-not-allowed"
+                      >
+                        Admin View Only
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => handleContactInterest(match)}
+                        disabled={interestedProfiles.has(match.uid) || loadingInterests[match.uid]}
+                        className={`w-full transition-all ${
+                          interestedProfiles.has(match.uid)
+                            ? "bg-gray-400 hover:bg-gray-400 cursor-not-allowed opacity-60"
+                            : "bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"
+                        }`}
+                      >
+                        {loadingInterests[match.uid] ? (
+                          <>
+                            <span className="animate-spin mr-2">⏳</span>
+                            Sending...
+                          </>
+                        ) : interestedProfiles.has(match.uid) ? (
+                          <>
+                            <Check className="w-4 h-4 mr-2" />
+                            Interest Sent
+                          </>
+                        ) : (
+                          <>
+                            <Heart className="w-4 h-4 mr-2" />
+                            Express Interest
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </Card>
               ))}

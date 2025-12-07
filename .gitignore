@@ -10,14 +10,29 @@
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
+
+# Environment files - keep .env.local private
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
+# Optional: Uncomment to keep all env files private
+# .env
+# .env.development
+# .env.production
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Firebase Emulator data
+firebase-data/
+.firebase/
+*-debug.log
+ui-debug.log
+firestore-debug.log

@@ -139,14 +139,16 @@ export const getApprovedProfiles = async (limitCount = 1000) => {
     const q = query(
       collection(db, 'profiles'),
       where('status', '==', 'approved'),
-      where('status', '!=', 'married'),
       orderBy('createdAt', 'desc'),
       limit(limitCount)
     );
     const snapshot = await getDocs(q);
-    console.log(snapshot);
-    
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    console.log('Approved profiles fetched:', snapshot.size);
+
+    // Filter out married profiles and return
+    return snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(profile => profile.status !== 'married');
   } catch (error) {
     console.error('Error getting approved profiles:', error);
     return [];
@@ -195,7 +197,7 @@ export const addAdminNote = async (uid, note) => {
 export const uploadProfilePhoto = async (uid, photoFile) => {
   try {
     const photoURL = await uploadToCloudinary(photoFile);
-    await updateDoc(doc(db, 'profiles', uid), { 
+    await updateDoc(doc(db, 'profiles', uid), {
       photoURL,
       updatedAt: Timestamp.now()
     });
@@ -204,5 +206,174 @@ export const uploadProfilePhoto = async (uid, photoFile) => {
   } catch (error) {
     console.error('Error uploading profile photo:', error);
     throw error;
+  }
+};
+
+// Profile Interest Tracking Functions
+
+export const expressInterest = async (currentUserId, targetUserId) => {
+  try {
+    // Create a unique document ID using both user IDs
+    const interestId = `${currentUserId}_${targetUserId}`;
+
+    // Check if interest already exists
+    const existingInterest = await getDoc(doc(db, 'interests', interestId));
+
+    if (existingInterest.exists()) {
+      // Update existing interest with new timestamp
+      await updateDoc(doc(db, 'interests', interestId), {
+        lastViewedAt: Timestamp.now(),
+        status: 'interested'
+      });
+      console.log('Interest updated');
+    } else {
+      // Create new interest document
+      await setDoc(doc(db, 'interests', interestId), {
+        interestedBy: currentUserId,
+        interestedIn: targetUserId,
+        status: 'interested',
+        createdAt: Timestamp.now(),
+        lastViewedAt: Timestamp.now(),
+        notes: ''
+      });
+      console.log('Interest created successfully');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error expressing interest:', error);
+    throw error;
+  }
+};
+
+export const checkInterest = async (currentUserId, targetUserId) => {
+  try {
+    const interestId = `${currentUserId}_${targetUserId}`;
+    const interestDoc = await getDoc(doc(db, 'interests', interestId));
+
+    if (interestDoc.exists()) {
+      return { exists: true, data: interestDoc.data() };
+    }
+    return { exists: false, data: null };
+  } catch (error) {
+    console.error('Error checking interest:', error);
+    return { exists: false, data: null };
+  }
+};
+
+export const getUserInterests = async (userId) => {
+  try {
+    // Get interests where user is the one who expressed interest
+    const sentInterestsQuery = query(
+      collection(db, 'interests'),
+      where('interestedBy', '==', userId)
+    );
+
+    // Get interests where user received interest
+    const receivedInterestsQuery = query(
+      collection(db, 'interests'),
+      where('interestedIn', '==', userId)
+    );
+
+    const [sentSnapshot, receivedSnapshot] = await Promise.all([
+      getDocs(sentInterestsQuery),
+      getDocs(receivedInterestsQuery)
+    ]);
+
+    const sentInterests = sentSnapshot.docs.map(doc => ({
+      id: doc.id,
+      type: 'sent',
+      ...doc.data()
+    }));
+
+    const receivedInterests = receivedSnapshot.docs.map(doc => ({
+      id: doc.id,
+      type: 'received',
+      ...doc.data()
+    }));
+
+    return {
+      sent: sentInterests,
+      received: receivedInterests,
+      all: [...sentInterests, ...receivedInterests]
+    };
+  } catch (error) {
+    console.error('Error getting user interests:', error);
+    return { sent: [], received: [], all: [] };
+  }
+};
+
+export const acceptInterest = async (interestId) => {
+  try {
+    await updateDoc(doc(db, 'interests', interestId), {
+      status: 'accepted',
+      acceptedAt: Timestamp.now()
+    });
+    console.log('Interest accepted successfully');
+    return true;
+  } catch (error) {
+    console.error('Error accepting interest:', error);
+    throw error;
+  }
+};
+
+export const rejectInterest = async (interestId) => {
+  try {
+    await updateDoc(doc(db, 'interests', interestId), {
+      status: 'rejected',
+      rejectedAt: Timestamp.now()
+    });
+    console.log('Interest rejected successfully');
+    return true;
+  } catch (error) {
+    console.error('Error rejecting interest:', error);
+    throw error;
+  }
+};
+
+export const getAcceptedInterests = async () => {
+  try {
+    const q = query(
+      collection(db, 'interests'),
+      where('status', '==', 'accepted')
+    );
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting accepted interests:', error);
+    return [];
+  }
+};
+
+export const getPairedProfiles = async () => {
+  try {
+    // Get all accepted interests
+    const acceptedInterests = await getAcceptedInterests();
+
+    // Fetch profile details for each pair
+    const pairs = await Promise.all(
+      acceptedInterests.map(async (interest) => {
+        const [profile1, profile2] = await Promise.all([
+          getUserProfile(interest.interestedBy),
+          getUserProfile(interest.interestedIn)
+        ]);
+
+        return {
+          interestId: interest.id,
+          acceptedAt: interest.acceptedAt,
+          profile1,
+          profile2
+        };
+      })
+    );
+
+    return pairs.filter(pair => pair.profile1 && pair.profile2);
+  } catch (error) {
+    console.error('Error getting paired profiles:', error);
+    return [];
   }
 };

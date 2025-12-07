@@ -8,7 +8,9 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import Profile from "./pages/Profile";
 import Matches from "./pages/Matches";
+import Interests from "./pages/Interests";
 import AdminDashboard from "./pages/AdminDashboard";
+import PairedProfiles from "./pages/PairedProfiles";
 import "@/App.css";
 
 const PrivateRoute = ({ children }) => {
@@ -64,10 +66,26 @@ function AppContent() {
           }
         />
         <Route
+          path="/interests"
+          element={
+            <PrivateRoute>
+              <Interests />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/admin"
           element={
             <AdminRoute>
               <AdminDashboard />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/paired-profiles"
+          element={
+            <AdminRoute>
+              <PairedProfiles />
             </AdminRoute>
           }
         />
